@@ -1,0 +1,11 @@
+[Unit]
+Description=Amazon DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability.
+After=network.target
+
+[Service]
+User={{ DYNAMODB_USER }}
+ExecStart=/usr/bin/java -Djava.library.path={{ DYNAMODB_HOME }}/DynamoDBLocal_lib -jar {{ DYNAMODB_HOME }}/DynamoDBLocal.jar -sharedDb -port {{ DYNAMODB_PORT }}
+WorkingDirectory={{ DYNAMODB_HOME }}
+
+[Install]
+WantedBy=multi-user.target

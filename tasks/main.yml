@@ -1,0 +1,83 @@
+---
+
+- name: Create DynamoDB Group
+  become: yes
+  become_user: root
+  user:
+    name: "{{ DYNAMODB_USER }}"
+    state: present
+
+- name: Create DynamoDB User
+  become: yes
+  become_user: root
+  user:
+    name: "{{ DYNAMODB_USER }}"
+    state: present
+    group: "{{ DYNAMODB_USER }}"
+    home: "{{ DYNAMODB_HOME }}"
+    shell: /bin/bash
+
+- name: "Configure DynamoDB ~/.profile"
+  become: yes
+  become_user: root
+  copy:
+    src: profile
+    dest: "{{ DYNAMODB_HOME }}/.profile"
+    owner: "{{ DYNAMODB_USER }}"
+    group: "{{ DYNAMODB_USER }}"
+    mode: 0755
+
+- name: "Configure DynamoDB ~/.bashrc"
+  become: yes
+  become_user: root
+  template:
+    src: bashrc.j2
+    dest: "{{ DYNAMODB_HOME }}/.bashrc"
+    owner: "{{ DYNAMODB_USER }}"
+    group: "{{ DYNAMODB_USER }}"
+    mode: 0755
+
+- name: "Download Files"
+  become: yes
+  become_user: "{{ DYNAMODB_USER }}"
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    checksum: "{{ item.checksum }}"
+  with_items:
+    - url: "{{ DYNAMODB_URL }}"
+      dest: "{{ DYNAMODB_DEST }}"
+      checksum: "{{ DYNAMODB_CHECKSUM }}"
+
+- name: "Unpack DynamoDB"
+  become: yes
+  become_user: "{{ DYNAMODB_USER }}"
+  unarchive:
+    src: "{{ DYNAMODB_DEST }}"
+    dest: "{{ DYNAMODB_HOME }}"
+    copy: no
+
+- name: Register DynamoDB as Service
+  become: yes
+  become_user: root
+  template:
+    src: dynamodb.service.j2
+    dest: /etc/systemd/system/dynamodb.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: "Refresh System Services"
+  become: yes
+  become_user: root
+  shell: "systemctl daemon-reload"
+
+- name: Restart DynamoDB Service
+  become: yes
+  become_user: root
+  service: name=dynamodb state=restarted
+
+- name: Enable DynamoDB Service
+  become: yes
+  become_user: root
+  service: name=dynamodb enabled=yes
